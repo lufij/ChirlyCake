@@ -9,10 +9,10 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from './ui/utils';
 import { api } from '../lib/api';
-import { toast } from 'sonner@2.0.3';
-import turronImage from 'figma:asset/f5fd82509aa844458a9987489ff3dc63ac9314e7.png';
-import fondantImage from 'figma:asset/0546f288cc45540200ba187c6f98e672c890ef6c.png';
-import betunImage from 'figma:asset/d9437422728e1c5a0ff4c628c8a3f11c480e7d8f.png';
+import { toast } from 'sonner';
+import turronImage from '../assets/f5fd82509aa844458a9987489ff3dc63ac9314e7.png';
+import fondantImage from '../assets/0546f288cc45540200ba187c6f98e672c890ef6c.png';
+import betunImage from '../assets/d9437422728e1c5a0ff4c628c8a3f11c480e7d8f.png';
 
 console.log('PublicOrderForm component loaded');
 
@@ -168,7 +168,7 @@ export default function PublicOrderForm() {
         // Abrir WhatsApp después de 1 segundo
         setTimeout(() => {
           const message = generateWhatsAppMessage();
-          window.open(`https://wa.me/?text=${message}`, '_blank');
+          window.open(`https://wa.me/50239007409?text=${message}`, '_blank');
         }, 1000);
       } else {
         throw new Error(response.error || 'Error al crear pedido');

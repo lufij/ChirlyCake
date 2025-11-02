@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
-import { Share2, Copy, QrCode, MessageCircle, ExternalLink, Cake } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { Share2, Copy, MessageCircle, ExternalLink, Cake } from 'lucide-react';
+import { toast } from 'sonner';
 
 export function PublicOrderLink() {
   const [showDialog, setShowDialog] = useState(false);
