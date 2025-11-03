@@ -9,9 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Plus, Edit, Trash2, Eye, Clock, CheckCircle, Package, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { ImageZoom } from './ui/ImageZoom';
 
 interface OrderListProps {
   user: User;
@@ -393,12 +394,13 @@ export function OrderList({ user }: OrderListProps) {
                   <h4 className="text-sm text-gray-600 mb-2">Imágenes de Referencia</h4>
                   <div className="grid grid-cols-2 gap-2">
                     {selectedOrder.images.map((url, idx) => (
-                      <img 
-                        key={idx} 
-                        src={url} 
-                        alt={`Referencia ${idx + 1}`}
-                        className="w-full h-48 object-cover rounded-lg"
-                      />
+                      <div key={idx} className="aspect-square rounded-lg overflow-hidden">
+                        <ImageZoom 
+                          src={url} 
+                          alt={`Referencia ${idx + 1}`}
+                          className="w-full h-full"
+                        />
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -498,11 +500,11 @@ function OrdersGrid({
             <div className="flex flex-col md:flex-row">
               {/* Imagen */}
               {order.images && order.images.length > 0 && (
-                <div className="md:w-48 h-48 md:h-auto flex-shrink-0">
-                  <img 
+                <div className="md:w-48 h-48 md:h-auto flex-shrink-0 overflow-hidden">
+                  <ImageZoom 
                     src={order.images[0]} 
                     alt="Pedido" 
-                    className="w-full h-full object-cover"
+                    className="w-full h-full"
                   />
                 </div>
               )}

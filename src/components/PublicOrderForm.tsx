@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from './ui/utils';
 import { api } from '../lib/api';
+import { ImageZoom } from './ui/ImageZoom';
 import { toast } from 'sonner';
 import turronImage from '../assets/f5fd82509aa844458a9987489ff3dc63ac9314e7.png';
 import fondantImage from '../assets/0546f288cc45540200ba187c6f98e672c890ef6c.png';
@@ -383,15 +384,18 @@ export default function PublicOrderForm() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                   {imagePreviews.map((preview, index) => (
                     <div key={index} className="relative aspect-square rounded-lg overflow-hidden border">
-                      <img
+                      <ImageZoom
                         src={preview}
                         alt={`Referencia ${index + 1}`}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full"
                       />
                       <button
                         type="button"
-                        onClick={() => removeImage(index)}
-                        className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeImage(index);
+                        }}
+                        className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 z-10"
                       >
                         ×
                       </button>
