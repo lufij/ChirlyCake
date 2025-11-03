@@ -192,65 +192,91 @@ export function ImageZoom({ src, alt, className = '' }: ImageZoomProps) {
 
       {/* Fullscreen Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/90 z-50">
-          {/* BOTÓN CERRAR SÚPER VISIBLE - SIEMPRE FUNCIONA */}
-          <div className="absolute top-0 left-0 right-0 h-24 bg-black/80 flex items-center justify-between px-4 z-[100]">
-            <span className="text-white text-lg font-bold">Toca CERRAR para salir</span>
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                closeModal();
-              }}
-              onTouchStart={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                closeModal();
-              }}
-              className="bg-red-600 hover:bg-red-700 text-white font-black text-xl py-3 px-6 rounded-lg shadow-xl border-2 border-white min-w-[120px] h-14"
-              style={{ 
-                touchAction: 'manipulation',
-                userSelect: 'none',
-                WebkitUserSelect: 'none',
-                WebkitTouchCallout: 'none'
-              }}
-            >
-              CERRAR ✕
-            </button>
-          </div>
-
-          {/* Botón adicional en la parte inferior */}
-          <div className="absolute bottom-0 left-0 right-0 h-20 bg-black/80 flex items-center justify-center z-[100]">
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                closeModal();
-              }}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                closeModal();
-              }}
-              className="bg-red-600 hover:bg-red-700 text-white font-black text-lg py-3 px-8 rounded-lg shadow-xl border-2 border-white min-w-[150px]"
-              style={{ 
-                touchAction: 'manipulation',
-                userSelect: 'none'
-              }}
-            >
-              ✕ CERRAR IMAGEN ✕
-            </button>
-          </div>
-
-          {/* Backdrop - click/touch to close */}
-          <div 
-            className="absolute inset-0 flex items-center justify-center p-4 pt-24 pb-20"
+        <div 
+          className="fixed inset-0 bg-black z-50"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 9999,
+            backgroundColor: 'rgba(0, 0, 0, 0.9)'
+          }}
+        >
+          {/* BOTÓN CERRAR FLOTANTE - MÁXIMA PRIORIDAD */}
+          <button
             onClick={closeModal}
-            onTouchEnd={(e) => {
+            onTouchEnd={closeModal}
+            style={{
+              position: 'fixed',
+              top: '20px',
+              right: '20px',
+              width: '80px',
+              height: '80px',
+              backgroundColor: '#ff0000',
+              color: 'white',
+              border: '4px solid white',
+              borderRadius: '50%',
+              fontSize: '24px',
+              fontWeight: 'bold',
+              zIndex: 10000,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+              touchAction: 'manipulation'
+            }}
+          >
+            ✕
+          </button>
+
+          {/* BOTÓN CERRAR CENTRAL - SIEMPRE VISIBLE */}
+          <div
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 10000,
+              textAlign: 'center'
+            }}
+          >
+            <button
+              onClick={closeModal}
+              onTouchEnd={closeModal}
+              style={{
+                width: '200px',
+                height: '60px',
+                backgroundColor: '#ff0000',
+                color: 'white',
+                border: '3px solid white',
+                borderRadius: '10px',
+                fontSize: '18px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                marginBottom: '20px',
+                touchAction: 'manipulation'
+              }}
+            >
+              CERRAR IMAGEN
+            </button>
+          </div>
+
+          {/* Área de la imagen */}
+          <div 
+            style={{
+              position: 'absolute',
+              top: '100px',
+              left: '20px',
+              right: '20px',
+              bottom: '100px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onClick={(e) => {
               if (e.target === e.currentTarget) {
                 closeModal();
               }
