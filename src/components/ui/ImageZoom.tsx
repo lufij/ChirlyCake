@@ -204,65 +204,33 @@ export function ImageZoom({ src, alt, className = '' }: ImageZoomProps) {
             backgroundColor: 'rgba(0, 0, 0, 0.9)'
           }}
         >
-          {/* BOTÓN CERRAR FLOTANTE - MÁXIMA PRIORIDAD */}
+          {/* BOTÓN CERRAR X - Pequeño y discreto */}
           <button
             onClick={closeModal}
             onTouchEnd={closeModal}
             style={{
               position: 'fixed',
-              top: '20px',
-              right: '20px',
-              width: '80px',
-              height: '80px',
+              top: '15px',
+              right: '15px',
+              width: '40px',
+              height: '40px',
               backgroundColor: '#ff0000',
               color: 'white',
-              border: '4px solid white',
+              border: '2px solid white',
               borderRadius: '50%',
-              fontSize: '24px',
+              fontSize: '16px',
               fontWeight: 'bold',
               zIndex: 10000,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.5)',
               touchAction: 'manipulation'
             }}
           >
             ✕
           </button>
-
-          {/* BOTÓN CERRAR CENTRAL - SIEMPRE VISIBLE */}
-          <div
-            style={{
-              position: 'fixed',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 10000,
-              textAlign: 'center'
-            }}
-          >
-            <button
-              onClick={closeModal}
-              onTouchEnd={closeModal}
-              style={{
-                width: '200px',
-                height: '60px',
-                backgroundColor: '#ff0000',
-                color: 'white',
-                border: '3px solid white',
-                borderRadius: '10px',
-                fontSize: '18px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                marginBottom: '20px',
-                touchAction: 'manipulation'
-              }}
-            >
-              CERRAR IMAGEN
-            </button>
-          </div>
 
           {/* Área de la imagen */}
           <div 
