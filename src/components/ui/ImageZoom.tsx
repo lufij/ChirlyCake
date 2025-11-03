@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-import { X } from 'lucide-react';
 
 interface ImageZoomProps {
   src: string;
@@ -194,19 +193,36 @@ export function ImageZoom({ src, alt, className = '' }: ImageZoomProps) {
       {/* Fullscreen Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/90 z-50">
-          {/* Close button - OUTSIDE the content area so it's always clickable */}
+          {/* Close button - EXTRA VISIBLE for mobile */}
           <button
             onClick={closeModal}
+            onTouchStart={(e) => e.stopPropagation()}
             onTouchEnd={(e) => {
               e.preventDefault();
               e.stopPropagation();
               closeModal();
             }}
-            className="absolute top-4 right-4 w-12 h-12 bg-white text-black rounded-full flex items-center justify-center transition-all duration-200 z-[60] hover:bg-gray-200 shadow-lg touch-manipulation"
-            style={{ touchAction: 'manipulation' }}
+            className="absolute top-6 right-6 w-16 h-16 bg-red-500 text-white rounded-full flex items-center justify-center transition-all duration-200 z-[70] shadow-2xl border-4 border-white touch-manipulation"
+            style={{ 
+              touchAction: 'manipulation',
+              fontSize: '24px',
+              fontWeight: 'bold'
+            }}
           >
-            <X className="w-6 h-6 font-bold" />
+            <span className="text-2xl font-black">✕</span>
           </button>
+
+          {/* Additional close area for mobile - top bar */}
+          <div 
+            onClick={closeModal}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              closeModal();
+            }}
+            className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-black/50 to-transparent flex items-center justify-center z-[60] touch-manipulation"
+          >
+            <span className="text-white text-lg font-bold opacity-70">Toca para cerrar</span>
+          </div>
 
           {/* Backdrop - click/touch to close */}
           <div 
@@ -218,6 +234,10 @@ export function ImageZoom({ src, alt, className = '' }: ImageZoomProps) {
               }
             }}
           >
+            {/* Close hint at bottom */}
+            <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-full text-sm pointer-events-none">
+              Toca fuera de la imagen para cerrar
+            </div>
             {/* Image container */}
             <div 
               className="relative max-w-full max-h-full"
