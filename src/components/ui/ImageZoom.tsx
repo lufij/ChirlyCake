@@ -204,55 +204,95 @@ export function ImageZoom({ src, alt, className = '' }: ImageZoomProps) {
             backgroundColor: 'rgba(0, 0, 0, 0.9)'
           }}
         >
-          {/* BOTÓN CERRAR X - Pequeño y discreto */}
-          <button
+          {/* BOTÓN CERRAR MÓVIL - Superior derecha */}
+          <div
             onClick={closeModal}
-            onTouchEnd={closeModal}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              closeModal();
+            }}
             style={{
-              position: 'fixed',
-              top: '15px',
-              right: '15px',
-              width: '40px',
-              height: '40px',
+              position: 'absolute',
+              top: '10px',
+              right: '10px',
+              width: '50px',
+              height: '50px',
               backgroundColor: '#ff0000',
               color: 'white',
-              border: '2px solid white',
+              border: '3px solid white',
               borderRadius: '50%',
-              fontSize: '16px',
+              fontSize: '20px',
               fontWeight: 'bold',
-              zIndex: 10000,
-              cursor: 'pointer',
+              zIndex: 99999,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.5)',
-              touchAction: 'manipulation'
+              boxShadow: '0 4px 15px rgba(0,0,0,0.8)',
+              touchAction: 'manipulation',
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
+              WebkitTouchCallout: 'none',
+              cursor: 'pointer'
             }}
           >
             ✕
-          </button>
+          </div>
 
-          {/* Área de la imagen */}
-          <div 
+          {/* BOTÓN CERRAR MÓVIL - Barra superior completa */}
+          <div
+            onClick={closeModal}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              closeModal();
+            }}
             style={{
               position: 'absolute',
-              top: '100px',
-              left: '20px',
-              right: '20px',
-              bottom: '100px',
+              top: '0px',
+              left: '0px',
+              right: '0px',
+              height: '70px',
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              color: 'white',
+              zIndex: 99998,
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              touchAction: 'manipulation',
+              fontSize: '18px',
+              fontWeight: 'bold',
+              borderBottom: '2px solid #ff0000'
             }}
+          >
+            TOCA AQUÍ PARA CERRAR ✕
+          </div>
+
+          {/* Área responsive de la imagen */}
+          <div 
             onClick={(e) => {
               if (e.target === e.currentTarget) {
                 closeModal();
               }
             }}
+            style={{
+              position: 'absolute',
+              top: '70px',
+              left: '0px',
+              right: '0px',
+              bottom: '0px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '10px',
+              overflow: 'hidden'
+            }}
           >
-            {/* Image container */}
+            {/* Contenedor responsive de imagen */}
             <div 
-              className="relative max-w-full max-h-full"
               onClick={(e) => e.stopPropagation()}
               onTouchStart={(e) => {
                 handleTouchStart(e);
@@ -267,20 +307,34 @@ export function ImageZoom({ src, alt, className = '' }: ImageZoomProps) {
               onMouseLeave={handleMouseUp}
               onDoubleClick={handleDoubleClick}
               style={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
-                touchAction: 'none'
+                touchAction: 'none',
+                overflow: 'hidden'
               }}
             >
               <img
                 ref={modalImageRef}
                 src={src}
                 alt={alt}
-                className="max-w-full max-h-full object-contain transition-transform duration-200 ease-out select-none"
+                draggable={false}
                 style={{
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  width: 'auto',
+                  height: 'auto',
+                  objectFit: 'contain',
                   transform: `scale(${scale}) translate(${position.x}px, ${position.y}px)`,
                   transformOrigin: 'center center',
+                  transition: 'transform 0.2s ease-out',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  pointerEvents: 'none'
                 }}
-                draggable={false}
               />
             </div>
           </div>
