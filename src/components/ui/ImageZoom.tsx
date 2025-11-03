@@ -193,40 +193,62 @@ export function ImageZoom({ src, alt, className = '' }: ImageZoomProps) {
       {/* Fullscreen Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/90 z-50">
-          {/* Close button - EXTRA VISIBLE for mobile */}
-          <button
-            onClick={closeModal}
-            onTouchStart={(e) => e.stopPropagation()}
-            onTouchEnd={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              closeModal();
-            }}
-            className="absolute top-6 right-6 w-16 h-16 bg-red-500 text-white rounded-full flex items-center justify-center transition-all duration-200 z-[70] shadow-2xl border-4 border-white touch-manipulation"
-            style={{ 
-              touchAction: 'manipulation',
-              fontSize: '24px',
-              fontWeight: 'bold'
-            }}
-          >
-            <span className="text-2xl font-black">✕</span>
-          </button>
+          {/* BOTÓN CERRAR SÚPER VISIBLE - SIEMPRE FUNCIONA */}
+          <div className="absolute top-0 left-0 right-0 h-24 bg-black/80 flex items-center justify-between px-4 z-[100]">
+            <span className="text-white text-lg font-bold">Toca CERRAR para salir</span>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                closeModal();
+              }}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                closeModal();
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white font-black text-xl py-3 px-6 rounded-lg shadow-xl border-2 border-white min-w-[120px] h-14"
+              style={{ 
+                touchAction: 'manipulation',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                WebkitTouchCallout: 'none'
+              }}
+            >
+              CERRAR ✕
+            </button>
+          </div>
 
-          {/* Additional close area for mobile - top bar */}
-          <div 
-            onClick={closeModal}
-            onTouchEnd={(e) => {
-              e.preventDefault();
-              closeModal();
-            }}
-            className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-black/50 to-transparent flex items-center justify-center z-[60] touch-manipulation"
-          >
-            <span className="text-white text-lg font-bold opacity-70">Toca para cerrar</span>
+          {/* Botón adicional en la parte inferior */}
+          <div className="absolute bottom-0 left-0 right-0 h-20 bg-black/80 flex items-center justify-center z-[100]">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                closeModal();
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                closeModal();
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white font-black text-lg py-3 px-8 rounded-lg shadow-xl border-2 border-white min-w-[150px]"
+              style={{ 
+                touchAction: 'manipulation',
+                userSelect: 'none'
+              }}
+            >
+              ✕ CERRAR IMAGEN ✕
+            </button>
           </div>
 
           {/* Backdrop - click/touch to close */}
           <div 
-            className="absolute inset-0 flex items-center justify-center p-4"
+            className="absolute inset-0 flex items-center justify-center p-4 pt-24 pb-20"
             onClick={closeModal}
             onTouchEnd={(e) => {
               if (e.target === e.currentTarget) {
@@ -234,10 +256,6 @@ export function ImageZoom({ src, alt, className = '' }: ImageZoomProps) {
               }
             }}
           >
-            {/* Close hint at bottom */}
-            <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-full text-sm pointer-events-none">
-              Toca fuera de la imagen para cerrar
-            </div>
             {/* Image container */}
             <div 
               className="relative max-w-full max-h-full"
