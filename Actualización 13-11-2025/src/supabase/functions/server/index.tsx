@@ -496,7 +496,14 @@ app.post("/make-server-95aa99a4/public-order", async (c) => {
     const body = await c.req.json();
     const { customer, order } = body;
 
-    console.log('Creating public order:', { customerPhone: customer.phone });
+    console.log('=== PUBLIC ORDER REQUEST ===');
+    console.log('Customer:', { name: customer.name, lastName: customer.lastName, phone: customer.phone });
+    console.log('Order data:', {
+      cakeType: order.cakeType,
+      cakeSize: order.cakeSize,
+      hasImages: !!order.referenceImages,
+      imagesCount: order.referenceImages?.length || 0
+    });
 
     // Find or create customer
     let customerId = '';
@@ -525,22 +532,38 @@ app.post("/make-server-95aa99a4/public-order", async (c) => {
     const uploadedImageUrls: string[] = [];
     if (order.referenceImages && order.referenceImages.length > 0) {
       const bucketName = 'make-95aa99a4-images';
-      console.log(`Processing ${order.referenceImages.length} reference images...`);
+      console.log(`\n=== IMAGE UPLOAD START ===`);
+      console.log(`Total images to process: ${order.referenceImages.length}`);
       
       // Generate base timestamp outside the loop to ensure uniqueness
       const baseTimestamp = Date.now();
       
       for (let i = 0; i < order.referenceImages.length; i++) {
         try {
-          console.log(`Processing image ${i + 1} of ${order.referenceImages.length}`);
-          const base64Data = order.referenceImages[i].split(',')[1];
+          console.log(`\n--- Processing image ${i + 1}/${order.referenceImages.length} ---`);
+          const imageData = order.referenceImages[i];
+          console.log(`Image ${i + 1} data length: ${imageData?.length || 0} chars`);
+          
+          if (!imageData || typeof imageData !== 'string') {
+            console.error(`Image ${i + 1} is invalid (not a string or empty)`);
+            continue;
+          }
+          
+          const base64Data = imageData.split(',')[1];
+          if (!base64Data) {
+            console.error(`Image ${i + 1} has no base64 data after split`);
+            continue;
+          }
+          
+          console.log(`Image ${i + 1} base64 length: ${base64Data.length} chars`);
           const buffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+          console.log(`Image ${i + 1} buffer size: ${buffer.length} bytes`);
           
           // Add small delay to ensure unique timestamp + use random component for extra uniqueness
           const randomSuffix = Math.random().toString(36).substring(2, 8);
           const fileName = `public-order-${baseTimestamp}-${i}-${randomSuffix}.jpg`;
           
-          console.log(`Uploading image to: ${fileName}`);
+          console.log(`Uploading image ${i + 1} to: ${fileName}`);
           const { data, error } = await supabaseAdmin.storage
             .from(bucketName)
             .upload(fileName, buffer, {
@@ -549,34 +572,37 @@ app.post("/make-server-95aa99a4/public-order", async (c) => {
             });
 
           if (error) {
-            console.error(`Error uploading image ${i}:`, error);
+            console.error(`❌ Error uploading image ${i + 1}:`, error);
             continue;
           }
           
-          console.log(`Image ${i} uploaded successfully, getting signed URL...`);
+          console.log(`✅ Image ${i + 1} uploaded successfully, getting signed URL...`);
           // Get signed URL (valid for 10 years)
           const { data: urlData, error: urlError } = await supabaseAdmin.storage
             .from(bucketName)
             .createSignedUrl(fileName, 315360000);
           
           if (urlError) {
-            console.error(`Error creating signed URL for image ${i}:`, urlError);
+            console.error(`❌ Error creating signed URL for image ${i + 1}:`, urlError);
             continue;
           }
           
           if (urlData?.signedUrl) {
             uploadedImageUrls.push(urlData.signedUrl);
-            console.log(`Image ${i} processed successfully, signed URL created`);
+            console.log(`✅ Image ${i + 1} processed successfully, signed URL created`);
+            console.log(`Total URLs collected so far: ${uploadedImageUrls.length}`);
           } else {
-            console.error(`No signed URL returned for image ${i}`);
+            console.error(`❌ No signed URL returned for image ${i + 1}`);
           }
         } catch (imgError) {
-          console.error(`Exception while processing image ${i}:`, imgError);
+          console.error(`❌ Exception while processing image ${i + 1}:`, imgError);
           // Continue even if one image fails
         }
       }
       
+      console.log(`\n=== IMAGE UPLOAD COMPLETE ===`);
       console.log(`Successfully uploaded ${uploadedImageUrls.length} of ${order.referenceImages.length} images`);
+      console.log(`Final image URLs count: ${uploadedImageUrls.length}`);
     }
 
     // Create order with special status
@@ -608,17 +634,22 @@ app.post("/make-server-95aa99a4/public-order", async (c) => {
       },
     };
 
+    console.log(`\n=== SAVING ORDER ===`);
+    console.log(`Order ID: ${orderId}`);
+    console.log(`Images in order: ${newOrder.images.length}`);
+    
     await kv.set(`order:${orderId}`, newOrder);
-    console.log('Public order created successfully:', orderId);
+    console.log('✅ Public order created successfully');
 
     return c.json({ 
       success: true,
       orderId,
       customerId,
+      imagesUploaded: uploadedImageUrls.length,
       message: 'Pedido creado exitosamente'
     });
   } catch (error: any) {
-    console.error('Create public order error:', error);
+    console.error('❌ Create public order error:', error);
     return c.json({ 
       error: error.message || 'Error al crear el pedido',
       success: false 

@@ -50,6 +50,7 @@
 - **📝 [FORMULARIO_PUBLICO.md](FORMULARIO_PUBLICO.md)** - Guía del formulario público
 - **🧪 [COMO_PROBAR_FORMULARIO.md](COMO_PROBAR_FORMULARIO.md)** - Cómo probar el formulario
 - **🔧 [SOLUCION_PROBLEMAS_FORMULARIO.md](SOLUCION_PROBLEMAS_FORMULARIO.md)** - Solución de problemas
+- **📱 [CONFIGURACION_WHATSAPP.md](CONFIGURACION_WHATSAPP.md)** - Configuración de WhatsApp para pedidos
 
 ## 📋 Listas y Checklists
 
@@ -116,7 +117,7 @@ npm run type-check  # Verificar TypeScript
 2. NOTA_IMPORTANTE_IMAGENES.md
 3. DEPLOYMENT_QUICK.md
 
-### 🟡 Importantes (Léelos después):
+### ���� Importantes (Léelos después):
 4. ARCHIVOS_NECESARIOS.md
 5. CHECKLIST_DEPLOYMENT.md
 6. INSTALACION_PWA.md
@@ -164,3 +165,9 @@ Una vez desplegado, tendrás:
 **💡 Tip:** Guarda este documento como referencia. Todos los demás documentos están organizados por tema.
 
 **🎯 Siguiente paso:** Ve a [START_HERE.md](START_HERE.md) para empezar tu deployment.
+
+## 🔄 Actualizaciones y Mejoras
+
+### Soluciones técnicas implementadas:
+- **🔒 [SOLUCION_PERSISTENCIA_SESION.md](SOLUCION_PERSISTENCIA_SESION.md)** - Persistencia de sesión y estado
+- **📱 [CONFIGURACION_WHATSAPP.md](CONFIGURACION_WHATSAPP.md)** - Integración de WhatsApp

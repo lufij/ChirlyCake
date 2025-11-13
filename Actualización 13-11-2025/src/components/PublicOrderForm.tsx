@@ -131,21 +131,34 @@ export default function PublicOrderForm() {
     setIsSubmitting(true);
 
     try {
+      console.log('=== STARTING ORDER SUBMISSION ===');
+      console.log(`Total images to send: ${referenceImages.length}`);
+      
       // Convert images to base64
       console.log(`Converting ${referenceImages.length} images to base64...`);
-      const imagePromises = referenceImages.map(file => {
-        return new Promise<string>((resolve) => {
+      const imagePromises = referenceImages.map((file, index) => {
+        return new Promise<string>((resolve, reject) => {
+          console.log(`Converting image ${index + 1}: ${file.name}, size: ${file.size} bytes`);
           const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
+          reader.onloadend = () => {
+            console.log(`✅ Image ${index + 1} converted successfully`);
+            resolve(reader.result as string);
+          };
+          reader.onerror = () => {
+            console.error(`❌ Error converting image ${index + 1}`);
+            reject(reader.error);
+          };
           reader.readAsDataURL(file);
         });
       });
 
       const imagesBase64 = await Promise.all(imagePromises);
-      console.log(`Converted ${imagesBase64.length} images to base64 successfully`);
+      console.log(`✅ Converted ${imagesBase64.length} images to base64 successfully`);
+      console.log('Image sizes:', imagesBase64.map((img, i) => `Image ${i + 1}: ${img.length} chars`));
 
       // Enviar pedido al backend
-      const response = await api.post('/public-order', {
+      console.log('Sending order to backend...');
+      const orderPayload = {
         customer: {
           name: formData.customerName,
           lastName: formData.customerLastName,
@@ -162,23 +175,35 @@ export default function PublicOrderForm() {
           notes: formData.notes,
           referenceImages: imagesBase64,
         },
+      };
+      
+      console.log('Order payload:', {
+        ...orderPayload,
+        order: {
+          ...orderPayload.order,
+          referenceImages: `${imagesBase64.length} images`,
+        }
       });
+      
+      const response = await api.post('/public-order', orderPayload);
       console.log('Server response:', response);
 
       if (response.success) {
+        console.log(`✅ Order created successfully! Images uploaded: ${response.imagesUploaded || 0}`);
         setOrderCreated(true);
         toast.success('¡Pedido enviado exitosamente!');
 
-        // Abrir WhatsApp después de 1 segundo
+        // Abrir WhatsApp con el número de la empresa después de 1 segundo
         setTimeout(() => {
           const message = generateWhatsAppMessage();
-          window.open(`https://wa.me/?text=${message}`, '_blank');
+          const phoneNumber = '50239007409'; // Número de WhatsApp de la empresa (Guatemala +502)
+          window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
         }, 1000);
       } else {
         throw new Error(response.error || 'Error al crear pedido');
       }
     } catch (error) {
-      console.error('Error creating public order:', error);
+      console.error('❌ Error creating public order:', error);
       toast.error('Error al enviar el pedido. Por favor intenta nuevamente.');
     } finally {
       setIsSubmitting(false);
@@ -254,7 +279,7 @@ export default function PublicOrderForm() {
                   type="tel"
                   value={formData.customerPhone}
                   onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
-                  placeholder="Ej: +1234567890"
+                  placeholder="Ej: +502 1234-5678"
                   required
                 />
               </div>
