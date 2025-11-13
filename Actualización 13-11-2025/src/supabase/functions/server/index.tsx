@@ -646,6 +646,7 @@ app.post("/make-server-95aa99a4/public-order", async (c) => {
       orderId,
       customerId,
       imagesUploaded: uploadedImageUrls.length,
+      imageUrls: uploadedImageUrls, // Include the image URLs in the response
       message: 'Pedido creado exitosamente'
     });
   } catch (error: any) {

@@ -1,17 +1,22 @@
 import { useState } from 'react';
 import { Button } from './ui/button';
-
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
-import { Share2, Copy, MessageCircle, ExternalLink, Cake } from 'lucide-react';
-import { toast } from 'sonner';
+import { Share2, Copy, QrCode, MessageCircle, ExternalLink, Cake } from 'lucide-react';
+import { toast } from 'sonner@2.0.3';
+import { copyToClipboard } from '../lib/clipboard';
 
 export function PublicOrderLink() {
   const [showDialog, setShowDialog] = useState(false);
   const publicLink = `${window.location.origin}/#/pedido`;
 
-  const copyLink = () => {
-    navigator.clipboard.writeText(publicLink);
-    toast.success('Link copiado al portapapeles');
+  const copyLink = async () => {
+    const success = await copyToClipboard(publicLink);
+    if (success) {
+      toast.success('Link copiado al portapapeles');
+    } else {
+      toast.error('No se pudo copiar el link');
+    }
   };
 
   const shareWhatsApp = () => {

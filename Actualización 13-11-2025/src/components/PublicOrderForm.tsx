@@ -62,11 +62,73 @@ export default function PublicOrderForm() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderCreated, setOrderCreated] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string>('');
+
+  // Helper function to compress images
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (e) => {
+        const img = new Image();
+        img.src = e.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // Resize if image is too large (max 1920px on longest side)
+          const MAX_SIZE = 1920;
+          if (width > height && width > MAX_SIZE) {
+            height = (height * MAX_SIZE) / width;
+            width = MAX_SIZE;
+          } else if (height > MAX_SIZE) {
+            width = (width * MAX_SIZE) / height;
+            height = MAX_SIZE;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          // Convert to JPEG with 85% quality
+          const compressedDataUrl = canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const reader = new FileReader();
+                reader.readAsDataURL(blob);
+                reader.onloadend = () => {
+                  resolve(reader.result as string);
+                };
+                reader.onerror = reject;
+              } else {
+                reject(new Error('Failed to compress image'));
+              }
+            },
+            'image/jpeg',
+            0.85
+          );
+        };
+        img.onerror = reject;
+      };
+      reader.onerror = reject;
+    });
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length + referenceImages.length > 5) {
       toast.error('Máximo 5 imágenes permitidas');
+      return;
+    }
+
+    // Validate file sizes (max 5MB each)
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    const oversizedFiles = files.filter(f => f.size > MAX_SIZE);
+    if (oversizedFiles.length > 0) {
+      toast.error(`Algunas imágenes son muy grandes. Máximo 5MB por imagen.`);
       return;
     }
 
@@ -93,20 +155,34 @@ export default function PublicOrderForm() {
       ? format(formData.deliveryDate, "dd 'de' MMMM, yyyy", { locale: es })
       : 'No especificada';
     
-    return encodeURIComponent(
-      `🎂 *NUEVO PEDIDO DE PASTEL*\n\n` +
-      `👤 Cliente: ${formData.customerName} ${formData.customerLastName}\n` +
-      `📱 Teléfono: ${formData.customerPhone}\n\n` +
-      `🍰 Tipo: ${CAKE_TYPES.find(t => t.id === formData.cakeType)?.name || 'No especificado'}\n` +
-      `👥 Tamaño: ${size}\n` +
-      `🎨 Decoración: ${formData.decoration || 'No especificada'}\n` +
-      `🌈 Color: ${formData.color || 'No especificado'}\n` +
-      `😋 Sabor: ${formData.flavor || 'No especificado'}\n\n` +
-      `📅 Entrega: ${date}\n` +
-      `🕐 Hora: ${formData.deliveryTime || 'No especificada'}\n\n` +
-      `📝 Notas: ${formData.notes || 'Ninguna'}\n\n` +
-      `✅ Pedido registrado en el sistema`
-    );
+    const message = `🎂 *NUEVO PEDIDO DE PASTEL*
+
+👤 Cliente: ${formData.customerName} ${formData.customerLastName}
+📱 Teléfono: ${formData.customerPhone}
+
+🍰 Tipo: ${CAKE_TYPES.find(t => t.id === formData.cakeType)?.name || 'No especificado'}
+👥 Tamaño: ${size}
+🎨 Decoración: ${formData.decoration || 'No especificada'}
+🌈 Color: ${formData.color || 'No especificado'}
+😋 Sabor: ${formData.flavor || 'No especificado'}
+
+📅 Entrega: ${date}
+🕐 Hora: ${formData.deliveryTime || 'No especificada'}
+
+📝 Notas: ${formData.notes || 'Ninguna'}
+
+${referenceImages.length > 0 ? `📸 *${referenceImages.length} imagen${referenceImages.length > 1 ? 'es' : ''} de referencia incluida${referenceImages.length > 1 ? 's' : ''}*
+
+` : ''}✅ *Pedido registrado exitosamente*
+
+📤 _Envíanos por este medio las imágenes de referencia de tu pedido_
+
+💰 En breve se te dará el precio del pedido`;
+    
+    console.log('📱 WhatsApp message (raw):', message);
+    console.log('📱 WhatsApp message (encoded):', encodeURIComponent(message));
+    
+    return encodeURIComponent(message);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -129,34 +205,35 @@ export default function PublicOrderForm() {
     }
 
     setIsSubmitting(true);
+    setUploadProgress('Preparando imágenes...');
 
     try {
       console.log('=== STARTING ORDER SUBMISSION ===');
       console.log(`Total images to send: ${referenceImages.length}`);
       
-      // Convert images to base64
-      console.log(`Converting ${referenceImages.length} images to base64...`);
-      const imagePromises = referenceImages.map((file, index) => {
-        return new Promise<string>((resolve, reject) => {
-          console.log(`Converting image ${index + 1}: ${file.name}, size: ${file.size} bytes`);
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            console.log(`✅ Image ${index + 1} converted successfully`);
-            resolve(reader.result as string);
-          };
-          reader.onerror = () => {
-            console.error(`❌ Error converting image ${index + 1}`);
-            reject(reader.error);
-          };
-          reader.readAsDataURL(file);
-        });
-      });
-
-      const imagesBase64 = await Promise.all(imagePromises);
-      console.log(`✅ Converted ${imagesBase64.length} images to base64 successfully`);
+      // Compress and convert images to base64
+      setUploadProgress(`Comprimiendo imágenes...`);
+      console.log(`Compressing and converting ${referenceImages.length} images to base64...`);
+      const imagesBase64: string[] = [];
+      
+      for (let i = 0; i < referenceImages.length; i++) {
+        try {
+          setUploadProgress(`Procesando imagen ${i + 1}/${referenceImages.length}...`);
+          console.log(`Processing image ${i + 1}: ${referenceImages[i].name}, size: ${referenceImages[i].size} bytes`);
+          const compressed = await compressImage(referenceImages[i]);
+          imagesBase64.push(compressed);
+          console.log(`✅ Image ${i + 1} compressed and converted successfully`);
+        } catch (error) {
+          console.error(`❌ Error processing image ${i + 1}:`, error);
+          toast.error(`Error al procesar imagen ${i + 1}`);
+        }
+      }
+      
+      console.log(`✅ Processed ${imagesBase64.length} images successfully`);
       console.log('Image sizes:', imagesBase64.map((img, i) => `Image ${i + 1}: ${img.length} chars`));
 
       // Enviar pedido al backend
+      setUploadProgress('Enviando pedido...');
       console.log('Sending order to backend...');
       const orderPayload = {
         customer: {
@@ -189,11 +266,13 @@ export default function PublicOrderForm() {
       console.log('Server response:', response);
 
       if (response.success) {
-        console.log(`✅ Order created successfully! Images uploaded: ${response.imagesUploaded || 0}`);
+        const imagesCount = response.imagesUploaded || 0;
+        console.log(`✅ Order created successfully! Images uploaded: ${imagesCount}/${referenceImages.length}`);
+        
         setOrderCreated(true);
-        toast.success('¡Pedido enviado exitosamente!');
+        toast.success('��Pedido enviado exitosamente!');
 
-        // Abrir WhatsApp con el número de la empresa después de 1 segundo
+        // Open WhatsApp with the order details
         setTimeout(() => {
           const message = generateWhatsAppMessage();
           const phoneNumber = '50239007409'; // Número de WhatsApp de la empresa (Guatemala +502)
@@ -491,7 +570,7 @@ export default function PublicOrderForm() {
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Enviando...
+                {uploadProgress || 'Enviando...'}
               </>
             ) : (
               <>

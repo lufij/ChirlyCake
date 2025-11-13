@@ -83,23 +83,34 @@ async function apiRequest(endpoint: string, options: RequestInit = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      headers,
+    });
 
-  const data = await response.json();
+    const data = await response.json();
 
-  if (!response.ok) {
-    // Si es un error de autenticación, limpiar el token
-    if (response.status === 401 || response.status === 403) {
-      console.error('❌ Authentication error detected, clearing local token');
-      setAuthToken(null);
+    if (!response.ok) {
+      // Si es un error de autenticación, limpiar el token
+      if (response.status === 401 || response.status === 403) {
+        console.error('❌ Authentication error detected, clearing local token');
+        setAuthToken(null);
+      }
+      const error = new Error(data.error || 'Request failed');
+      (error as any).status = response.status;
+      throw error;
     }
-    throw new Error(data.error || 'Request failed');
-  }
 
-  return data;
+    return data;
+  } catch (error: any) {
+    // Si es un error de red (no Response), agregar más contexto
+    if (error.message === 'Failed to fetch') {
+      console.error(`❌ Network error calling ${endpoint}:`, error);
+      throw new Error('Error de conexión. Verifica tu conexión a internet.');
+    }
+    throw error;
+  }
 }
 
 // Auth APIs

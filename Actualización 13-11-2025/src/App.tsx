@@ -82,9 +82,16 @@ export default function App() {
       const data = await getProfile();
       console.log('📝 Profile updated:', data.user);
       setUser(data.user);
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error updating profile:', error);
-      setUser(null);
+      
+      // Si el error es 401 (Unauthorized), limpiar la sesión
+      if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+        console.log('🚪 Session expired, signing out...');
+        setAuthToken(null);
+        setUser(null);
+        await supabase.auth.signOut();
+      }
     }
   };
 
