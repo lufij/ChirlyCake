@@ -1,5 +1,6 @@
 import { X, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { cn } from './ui/utils';
 
 interface ImageViewerProps {
   src: string;
@@ -253,14 +254,24 @@ interface ZoomableImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
   alt: string;
   className?: string;
+  containerClassName?: string;
 }
 
-export function ZoomableImage({ src, alt, className, ...props }: ZoomableImageProps) {
+export function ZoomableImage({ 
+  src, 
+  alt, 
+  className, 
+  containerClassName,
+  ...props 
+}: ZoomableImageProps) {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
 
   return (
     <>
-      <div className="relative group cursor-pointer" onClick={() => setIsViewerOpen(true)}>
+      <div 
+        className={cn('relative group cursor-pointer', containerClassName)} 
+        onClick={() => setIsViewerOpen(true)}
+      >
         <img
           src={src}
           alt={alt}

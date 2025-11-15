@@ -395,10 +395,11 @@ export function OrderList({ user }: OrderListProps) {
                   <div className="grid grid-cols-2 gap-2">
                     {selectedOrder.images.map((url, idx) => (
                       <ZoomableImage
-                        key={idx} 
-                        src={url} 
+                        key={idx}
+                        src={url}
                         alt={`Referencia ${idx + 1}`}
-                        className="w-full h-48 object-cover rounded-lg"
+                        className="w-full h-full object-cover"
+                        containerClassName="h-40 rounded-lg overflow-hidden"
                       />
                     ))}
                   </div>
@@ -499,12 +500,15 @@ function OrdersGrid({
             <div className="flex flex-col md:flex-row">
               {/* Imagen */}
               {order.images && order.images.length > 0 && (
-                <div className="md:w-48 h-48 md:h-auto flex-shrink-0">
-                  <ZoomableImage
-                    src={order.images[0]} 
-                    alt="Pedido" 
-                    className="w-full h-full object-cover"
-                  />
+                <div className="w-full md:w-56 flex-shrink-0 border-b md:border-b-0 md:border-r border-white/60 bg-white/60">
+                  <div className="aspect-[3/4] max-h-[360px] md:max-h-none md:aspect-auto md:h-full overflow-hidden">
+                    <ZoomableImage
+                      src={order.images[0]}
+                      alt="Pedido"
+                      className="w-full h-full object-cover"
+                      containerClassName="h-full"
+                    />
+                  </div>
                 </div>
               )}
               
