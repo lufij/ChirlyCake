@@ -1,0 +1,590 @@
+import { useState } from 'react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
+import { Label } from './ui/label';
+import { Card } from './ui/card';
+import { Upload, Check, Cake, MessageCircle, Loader2 } from 'lucide-react';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { cn } from './ui/utils';
+import { api } from '../lib/api';
+import { toast } from 'sonner';
+
+
+
+import { ZoomableImage } from './ImageViewer';
+
+console.log('PublicOrderForm component loaded');
+
+const CAKE_TYPES = [
+  {
+    id: 'turron',
+    name: 'Turrón (Merengue)',
+    description: 'Base de claras de huevo',
+    image: "",
+  },
+  {
+    id: 'betun',
+    name: 'Betún',
+    description: 'Crema mantequilla',
+    image: "",
+  },
+  {
+    id: 'fondant',
+    name: 'Fondant',
+    description: 'Cobertura suave y lisa',
+    image: "",
+  },
+];
+
+const CAKE_SIZES = [5, 10, 15, 20, 25, 30, 40, 50, 70, 100, 200];
+
+export default function PublicOrderForm() {
+  console.log('PublicOrderForm rendering');
+  
+  const [formData, setFormData] = useState({
+    customerName: '',
+    customerLastName: '',
+    customerPhone: '',
+    cakeType: '',
+    cakeSize: 0,
+    customSize: '',
+    decoration: '',
+    color: '',
+    flavor: '',
+    deliveryDate: undefined as Date | undefined,
+    deliveryTime: '',
+    notes: '',
+  });
+
+  const [referenceImages, setReferenceImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderCreated, setOrderCreated] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string>('');
+
+  // Helper function to compress images
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (e) => {
+        const img = new Image();
+        img.src = e.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // Resize if image is too large (max 1920px on longest side)
+          const MAX_SIZE = 1920;
+          if (width > height && width > MAX_SIZE) {
+            height = (height * MAX_SIZE) / width;
+            width = MAX_SIZE;
+          } else if (height > MAX_SIZE) {
+            width = (width * MAX_SIZE) / height;
+            height = MAX_SIZE;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          // Convert to JPEG with 85% quality
+          const compressedDataUrl = canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const reader = new FileReader();
+                reader.readAsDataURL(blob);
+                reader.onloadend = () => {
+                  resolve(reader.result as string);
+                };
+                reader.onerror = reject;
+              } else {
+                reject(new Error('Failed to compress image'));
+              }
+            },
+            'image/jpeg',
+            0.85
+          );
+        };
+        img.onerror = reject;
+      };
+      reader.onerror = reject;
+    });
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length + referenceImages.length > 5) {
+      toast.error('Máximo 5 imágenes permitidas');
+      return;
+    }
+
+    // Validate file sizes (max 5MB each)
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    const oversizedFiles = files.filter(f => f.size > MAX_SIZE);
+    if (oversizedFiles.length > 0) {
+      toast.error(`Algunas imágenes son muy grandes. Máximo 5MB por imagen.`);
+      return;
+    }
+
+    setReferenceImages([...referenceImages, ...files]);
+    
+    // Create previews
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreviews(prev => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (index: number) => {
+    setReferenceImages(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const generateWhatsAppMessage = () => {
+    const size = formData.customSize || `${formData.cakeSize} personas`;
+    const date = formData.deliveryDate 
+      ? format(formData.deliveryDate, "dd 'de' MMMM, yyyy", { locale: es })
+      : 'No especificada';
+    
+    const message = `🎂 *NUEVO PEDIDO DE PASTEL*
+
+👤 Cliente: ${formData.customerName} ${formData.customerLastName}
+📱 Teléfono: ${formData.customerPhone}
+
+🍰 Tipo: ${CAKE_TYPES.find(t => t.id === formData.cakeType)?.name || 'No especificado'}
+👥 Tamaño: ${size}
+🎨 Decoración: ${formData.decoration || 'No especificada'}
+🌈 Color: ${formData.color || 'No especificado'}
+😋 Sabor: ${formData.flavor || 'No especificado'}
+
+📅 Entrega: ${date}
+🕐 Hora: ${formData.deliveryTime || 'No especificada'}
+
+📝 Notas: ${formData.notes || 'Ninguna'}
+
+${referenceImages.length > 0 ? `📸 *${referenceImages.length} imagen${referenceImages.length > 1 ? 'es' : ''} de referencia incluida${referenceImages.length > 1 ? 's' : ''}*
+
+` : ''}✅ *Pedido registrado exitosamente*
+
+📤 _Envíanos por este medio las imágenes de referencia de tu pedido_
+
+💰 En breve se te dará el precio del pedido`;
+    
+    console.log('📱 WhatsApp message (raw):', message);
+    console.log('📱 WhatsApp message (encoded):', encodeURIComponent(message));
+    
+    return encodeURIComponent(message);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validaciones básicas
+    if (!formData.customerName || !formData.customerPhone) {
+      toast.error('Por favor completa tu nombre y teléfono');
+      return;
+    }
+
+    if (!formData.cakeType) {
+      toast.error('Por favor selecciona el tipo de cobertura');
+      return;
+    }
+
+    if (formData.cakeSize === 0 && !formData.customSize) {
+      toast.error('Por favor selecciona el tamaño del pastel');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setUploadProgress('Preparando imágenes...');
+
+    try {
+      console.log('=== STARTING ORDER SUBMISSION ===');
+      console.log(`Total images to send: ${referenceImages.length}`);
+      
+      // Compress and convert images to base64
+      setUploadProgress(`Comprimiendo imágenes...`);
+      console.log(`Compressing and converting ${referenceImages.length} images to base64...`);
+      const imagesBase64: string[] = [];
+      
+      for (let i = 0; i < referenceImages.length; i++) {
+        try {
+          setUploadProgress(`Procesando imagen ${i + 1}/${referenceImages.length}...`);
+          console.log(`Processing image ${i + 1}: ${referenceImages[i].name}, size: ${referenceImages[i].size} bytes`);
+          const compressed = await compressImage(referenceImages[i]);
+          imagesBase64.push(compressed);
+          console.log(`✅ Image ${i + 1} compressed and converted successfully`);
+        } catch (error) {
+          console.error(`❌ Error processing image ${i + 1}:`, error);
+          toast.error(`Error al procesar imagen ${i + 1}`);
+        }
+      }
+      
+      console.log(`✅ Processed ${imagesBase64.length} images successfully`);
+      console.log('Image sizes:', imagesBase64.map((img, i) => `Image ${i + 1}: ${img.length} chars`));
+
+      // Enviar pedido al backend
+      setUploadProgress('Enviando pedido...');
+      console.log('Sending order to backend...');
+      const orderPayload = {
+        customer: {
+          name: formData.customerName,
+          lastName: formData.customerLastName,
+          phone: formData.customerPhone,
+        },
+        order: {
+          cakeType: formData.cakeType,
+          cakeSize: formData.customSize || `${formData.cakeSize} personas`,
+          decoration: formData.decoration,
+          color: formData.color,
+          flavor: formData.flavor,
+          deliveryDate: formData.deliveryDate?.toISOString(),
+          deliveryTime: formData.deliveryTime,
+          notes: formData.notes,
+          referenceImages: imagesBase64,
+        },
+      };
+      
+      console.log('Order payload:', {
+        ...orderPayload,
+        order: {
+          ...orderPayload.order,
+          referenceImages: `${imagesBase64.length} images`,
+        }
+      });
+      
+      const response = await api.post('/public-order', orderPayload);
+      console.log('Server response:', response);
+
+      if (response.success) {
+        const imagesCount = response.imagesUploaded || 0;
+        console.log(`✅ Order created successfully! Images uploaded: ${imagesCount}/${referenceImages.length}`);
+        
+        setOrderCreated(true);
+        toast.success('��Pedido enviado exitosamente!');
+
+        // Open WhatsApp with the order details
+        setTimeout(() => {
+          const message = generateWhatsAppMessage();
+          const phoneNumber = '50239007409'; // Número de WhatsApp de la empresa (Guatemala +502)
+          window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
+        }, 1000);
+      } else {
+        throw new Error(response.error || 'Error al crear pedido');
+      }
+    } catch (error) {
+      console.error('❌ Error creating public order:', error);
+      toast.error('Error al enviar el pedido. Por favor intenta nuevamente.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (orderCreated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white flex items-center justify-center p-4">
+        <Card className="max-w-md w-full p-8 text-center space-y-6">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+            <Check className="w-10 h-10 text-green-600" />
+          </div>
+          <div>
+            <h2 className="text-2xl mb-2">¡Pedido Enviado!</h2>
+            <p className="text-gray-600">
+              Tu pedido ha sido registrado exitosamente. En breve nos comunicaremos contigo para confirmar los detalles y el precio.
+            </p>
+          </div>
+          <Button
+            onClick={() => window.location.reload()}
+            className="w-full"
+          >
+            Hacer Otro Pedido
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white py-8 px-4">
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-pink-100 rounded-full mb-4">
+            <Cake className="w-8 h-8 text-pink-600" />
+          </div>
+          <h1 className="text-3xl mb-2">Haz tu Pedido</h1>
+          <p className="text-gray-600">
+            Completa el formulario y nos pondremos en contacto contigo
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Datos del Cliente */}
+          <Card className="p-6">
+            <h2 className="text-xl mb-4">📋 Tus Datos</h2>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="customerName">Nombre *</Label>
+                <Input
+                  id="customerName"
+                  value={formData.customerName}
+                  onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                  placeholder="Tu nombre"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="customerLastName">Apellido</Label>
+                <Input
+                  id="customerLastName"
+                  value={formData.customerLastName}
+                  onChange={(e) => setFormData({ ...formData, customerLastName: e.target.value })}
+                  placeholder="Tu apellido"
+                />
+              </div>
+              <div>
+                <Label htmlFor="customerPhone">Teléfono / WhatsApp *</Label>
+                <Input
+                  id="customerPhone"
+                  type="tel"
+                  value={formData.customerPhone}
+                  onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
+                  placeholder="Ej: +502 1234-5678"
+                  required
+                />
+              </div>
+            </div>
+          </Card>
+
+          {/* Tipo de Cobertura */}
+          <Card className="p-6">
+            <h2 className="text-xl mb-4">🎨 Tipo de Cobertura *</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {CAKE_TYPES.map((type) => (
+                <button
+                  key={type.id}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, cakeType: type.id })}
+                  className={cn(
+                    "relative rounded-lg overflow-hidden border-2 transition-all hover:scale-105",
+                    formData.cakeType === type.id
+                      ? "border-pink-500 ring-2 ring-pink-500"
+                      : "border-gray-200"
+                  )}
+                >
+                  <div className="aspect-square pointer-events-none">
+                    <img
+                      src={type.image}
+                      alt={type.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4 text-white">
+                    <div className="font-semibold">{type.name}</div>
+                    <div className="text-sm opacity-90">{type.description}</div>
+                  </div>
+                  {formData.cakeType === type.id && (
+                    <div className="absolute top-2 right-2 w-8 h-8 bg-pink-500 rounded-full flex items-center justify-center">
+                      <Check className="w-5 h-5 text-white" />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </Card>
+
+          {/* Tamaño */}
+          <Card className="p-6">
+            <h2 className="text-xl mb-4">👥 Tamaño / Personas *</h2>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 mb-4">
+              {CAKE_SIZES.map((size) => (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, cakeSize: size, customSize: '' })}
+                  className={cn(
+                    "aspect-square rounded-lg border-2 transition-all hover:scale-105 flex flex-col items-center justify-center",
+                    formData.cakeSize === size
+                      ? "border-pink-500 bg-pink-50 text-pink-700"
+                      : "border-gray-200 hover:border-pink-300"
+                  )}
+                >
+                  <span className="text-2xl">{size}</span>
+                  <span className="text-xs mt-1">personas</span>
+                </button>
+              ))}
+            </div>
+            <div>
+              <Label htmlFor="customSize">O especifica otro tamaño</Label>
+              <Input
+                id="customSize"
+                value={formData.customSize}
+                onChange={(e) => setFormData({ ...formData, customSize: e.target.value, cakeSize: 0 })}
+                placeholder="Ej: 35 personas, 1/2 libra, etc."
+              />
+            </div>
+          </Card>
+
+          {/* Detalles del Pastel */}
+          <Card className="p-6">
+            <h2 className="text-xl mb-4">🍰 Detalles del Pastel</h2>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="decoration">Decoración Deseada</Label>
+                <Input
+                  id="decoration"
+                  value={formData.decoration}
+                  onChange={(e) => setFormData({ ...formData, decoration: e.target.value })}
+                  placeholder="Ej: Flores, unicornio, superhéroes..."
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="color">Color Principal</Label>
+                  <Input
+                    id="color"
+                    value={formData.color}
+                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                    placeholder="Ej: Rosa, azul..."
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="flavor">Sabor</Label>
+                  <Input
+                    id="flavor"
+                    value={formData.flavor}
+                    onChange={(e) => setFormData({ ...formData, flavor: e.target.value })}
+                    placeholder="Ej: Chocolate, vainilla..."
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="notes">Notas Adicionales</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder="Cualquier detalle adicional que quieras agregar..."
+                  rows={3}
+                />
+              </div>
+            </div>
+          </Card>
+
+          {/* Fotos de Referencia */}
+          <Card className="p-6">
+            <h2 className="text-xl mb-4">📸 Fotos de Referencia</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Sube hasta 5 fotos que te inspiren para tu pastel
+            </p>
+            <div className="space-y-4">
+              {imagePreviews.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} className="relative aspect-square rounded-lg overflow-hidden border group">
+                      <ZoomableImage
+                        src={preview}
+                        alt={`Referencia ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeImage(index);
+                        }}
+                        className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 z-10 shadow-lg"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {imagePreviews.length < 5 && (
+                <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-8 cursor-pointer hover:border-pink-400 transition-colors">
+                  <Upload className="w-12 h-12 text-gray-400 mb-2" />
+                  <span className="text-sm text-gray-600">
+                    Toca para subir imágenes
+                  </span>
+                  <span className="text-xs text-gray-400 mt-1">
+                    ({imagePreviews.length}/5)
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
+          </Card>
+
+          {/* Fecha y Hora de Entrega */}
+          <Card className="p-6">
+            <h2 className="text-xl mb-4">📅 Fecha y Hora de Entrega</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="deliveryDate">Fecha</Label>
+                <Input
+                  id="deliveryDate"
+                  type="date"
+                  value={formData.deliveryDate ? format(formData.deliveryDate, 'yyyy-MM-dd') : ''}
+                  onChange={(e) => {
+                    const date = e.target.value ? new Date(e.target.value + 'T00:00:00') : undefined;
+                    setFormData({ ...formData, deliveryDate: date });
+                  }}
+                  min={format(new Date(), 'yyyy-MM-dd')}
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <Label htmlFor="deliveryTime">Hora</Label>
+                <Input
+                  id="deliveryTime"
+                  type="time"
+                  value={formData.deliveryTime}
+                  onChange={(e) => setFormData({ ...formData, deliveryTime: e.target.value })}
+                />
+              </div>
+            </div>
+          </Card>
+
+          {/* Submit Button */}
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full h-14 text-lg"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                {uploadProgress || 'Enviando...'}
+              </>
+            ) : (
+              <>
+                <MessageCircle className="mr-2 h-5 w-5" />
+                Enviar Pedido por WhatsApp
+              </>
+            )}
+          </Button>
+
+          <p className="text-center text-sm text-gray-500">
+            Al enviar tu pedido, recibirás confirmación por WhatsApp con los detalles y precio
+          </p>
+        </form>
+      </div>
+    </div>
+  );
+}

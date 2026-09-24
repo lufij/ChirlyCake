@@ -1,0 +1,21 @@
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+  }
+  h1 { font-size: var(--text-2xl); font-weight: var(--font-weight-medium); }
+  h2 { font-size: var(--text-xl); font-weight: var(--font-weight-medium); }
+  h3 { font-size: var(--text-lg); font-weight: var(--font-weight-medium); }
+  h4 { font-size: var(--text-base); font-weight: var(--font-weight-medium); }
+  p  { font-size: var(--text-base); font-weight: var(--font-weight-normal); }
+  label  { font-size: var(--text-base); font-weight: var(--font-weight-medium); }
+  button { font-size: var(--text-base); font-weight: var(--font-weight-medium); }
+  input  { font-size: var(--text-base); font-weight: var(--font-weight-normal); }
+}
+
+html {
+  font-size: var(--font-size);
+}
